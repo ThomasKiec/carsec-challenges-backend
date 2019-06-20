@@ -1,0 +1,37 @@
+{
+    "env": {
+        "test": {
+            "presets": [
+                [
+                    "env",
+                    {
+                        "targets": {
+                            "node": "11.10"
+                        },
+                        "loose": true
+                    }
+                ]
+            ]
+        }
+    },
+    "presets": [
+        "babel-preset-env",
+        [
+            "env",
+            {
+                "targets": {
+                    "node": "11.10"
+                },
+                "loose": true,
+                "modules": false
+            }
+        ]
+    ],
+    "plugins": [
+        "transform-async-generator-functions",
+        "transform-async-to-generator",
+        "transform-flow-strip-types",
+        "transform-object-rest-spread",
+        ["transform-runtime", { "polyfill": false }]
+    ]
+}

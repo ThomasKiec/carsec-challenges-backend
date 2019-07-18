@@ -3,15 +3,48 @@ import { getPool } from './connection'
 async function getUserChallenge(userId, challengeId) {
   const db = await getPool()
 
-  return db.query(`select * from userChallenges where userId = ${userId} and challengeId = ${challengeId}`)
+  return db.query('select * from user_challenges where userId = ? and challengeId = ?', [userId, challengeId])
 }
 
-export async function createUserChallenge(userId, challengeId, downloadPath, challengeResult) {
+// eslint-disable-next-line require-await
+export async function createUserChallenge(connection, userId, challengeId) {
+  return connection.query(
+    `insert into user_challenges (userId, challengeId) 
+      values(?, ?)`,
+    [userId, challengeId]
+  )
+}
+
+export async function getPendingUserChallenges(limit) {
   const db = await getPool()
 
   return db.query(
-    `insert into userChallenges (userId, challengeId, downloadPath, challengeResult) 
-      values("${userId}", "${challengeId}", "${downloadPath}", "${challengeResult}")`
+    `select uc.userId, uc.challengeId, c.build_call 
+    from user_challenges uc 
+    left join challenges c on c.id = uc.challengeId 
+    where uc.status = "pending"
+    LIMIT ?`,
+    [limit]
+  )
+}
+
+// eslint-disable-next-line require-await
+export async function processUserChallengeBuild(connection, userId, challengeId) {
+  return connection.query('update user_challenges set status = "processing" where userId = ? and challengeId = ?', [
+    userId,
+    challengeId,
+  ])
+}
+
+// eslint-disable-next-line require-await
+export async function completeUserChallengeBuild(connection, userId, challengeId, downloadPath, challengeResult) {
+  return connection.query(
+    `update user_challenges 
+      set downloadPath = ?, 
+      challengeResult = ?, 
+      status = "completed"
+      where userId = ? and challengeId = ?`,
+    [downloadPath, challengeResult, userId, challengeId]
   )
 }
 
@@ -21,7 +54,24 @@ export async function solveUserChallenge(userId, challengeId, userResult) {
   const [[{ challengeResult }]] = await getUserChallenge(userId, challengeId)
 
   if (userResult === challengeResult) {
-    return db.query(`update userChallenges set solved = true where userId = ${userId} and challengeId = ${challengeId}`)
+    return db.getConnection().then(async connection => {
+      try {
+        const userChallenge = await connection.query(
+          'update user_challenges set solved = true where userId = ? and challengeId = ?',
+          [userId, challengeId]
+        )
+
+        await connection.commit()
+
+        return userChallenge
+      } catch (error) {
+        await connection.rollback()
+
+        throw error
+      } finally {
+        await connection.release()
+      }
+    })
   }
 
   throw new Error('Solved string does not match result')

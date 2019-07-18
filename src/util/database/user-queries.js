@@ -73,11 +73,7 @@ export async function changeUserPassword(userId, password) {
 
   return db.getConnection().then(async connection => {
     try {
-      bcrypt.hash(password, 10, async (error, passwordHash) => {
-        if (error) {
-          throw error
-        }
-
+      bcrypt.hash(password, 10).then(async passwordHash => {
         const [user] = await db.query(
           `update users
           set password = ?
@@ -106,11 +102,7 @@ export async function resetUserPassword(userId) {
     try {
       const password = passwordGenerator.generate({ length: 10, numbers: true })
 
-      bcrypt.hash(password, 10, async (error, passwordHash) => {
-        if (error) {
-          throw error
-        }
-
+      return bcrypt.hash(password, 10).then(async passwordHash => {
         const [user] = await db.query(
           `update users
           set password = ?
@@ -120,7 +112,7 @@ export async function resetUserPassword(userId) {
 
         await connection.commit()
 
-        return user
+        return { password, user }
       })
     } catch (error) {
       await connection.rollback()

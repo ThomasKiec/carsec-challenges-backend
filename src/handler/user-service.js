@@ -2,6 +2,7 @@ import { body, header, param, query } from 'express-validator/check'
 import {
   changeUserPassword,
   deleteUserById,
+  getUserById,
   listUsersWithTeams,
   resetUserPassword,
 } from '../util/database/user-queries'
@@ -12,7 +13,7 @@ import { authorizeUser } from '../middlewares/authorize-user'
 import { handleValidationResultError } from '../middlewares/handle-validation-result-error'
 import passport from 'passport'
 import passwordGenerator from 'generate-password'
-import { sendSignupEmail } from '../util/mailer'
+import { sendPasswordResetEmail } from '../util/mailer'
 
 export function userService() {
   const passwordSchema = new PasswordValidator()
@@ -60,22 +61,14 @@ export function userService() {
     (req, res, next) =>
       passport.authenticate('local-signup', { session: false }, async (error, user, info) => {
         if (error) {
-          return next(error)
+          return res.status(400).json({ message: error.message, type: 'signupMessage' })
         }
 
         if (user) {
-          try {
-            const { email, password } = info
-
-            await sendSignupEmail(email, password)
-          } catch (error) {
-            res.status(500).json({ message: error.message, type: 'signup' })
-          }
-
           return res.json({ user: user })
         }
 
-        return res.status(400).json(info)
+        return res.status(400).json({ message: info, type: 'signupMessage' })
       })(req, res, next)
   )
 
@@ -161,7 +154,7 @@ export function userService() {
     }
   )
 
-  router.get(
+  router.put(
     '/reset/:userId',
     [
       header('Authorization')
@@ -177,7 +170,18 @@ export function userService() {
       const { userId } = req.params
 
       try {
-        const { affectedRows } = await resetUserPassword(userId)
+        const {
+          user: { affectedRows },
+          password,
+        } = await resetUserPassword(userId)
+
+        const [[user]] = await getUserById(userId)
+
+        if (user) {
+          const { email } = user
+
+          await sendPasswordResetEmail(email, password)
+        }
 
         res.json({
           affectedRows: {
@@ -185,6 +189,7 @@ export function userService() {
           },
         })
       } catch (error) {
+        console.log(error)
         res.status(400).json({ message: error.message, type: 'resetUser' })
       }
     }

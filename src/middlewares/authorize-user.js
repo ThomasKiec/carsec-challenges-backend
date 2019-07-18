@@ -14,6 +14,6 @@ export function authorizeUser(req, res, next, strategy) {
       return next()
     }
 
-    res.status(400).json({ message: info.message, type: info.type })
+    res.status(401).json({ message: info.message, type: info.type })
   })(req, res, next)
 }

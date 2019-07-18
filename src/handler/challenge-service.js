@@ -24,12 +24,12 @@ export function challengeService() {
 
         return res.json({ challenges })
       } catch (error) {
-        res.status(400).json(error)
+        res.status(400).json({ message: error.message, type: 'listChallenges' })
       }
     }
   )
 
-  router.put(
+  router.post(
     '/',
     [
       header('Authorization')
@@ -40,30 +40,33 @@ export function challengeService() {
         .withMessage('Parameter project is required'),
       body('title')
         .exists()
-        .withMessage('Parameter project is required'),
+        .withMessage('Parameter title is required'),
       body('points')
         .exists()
-        .withMessage('Parameter project is required'),
+        .withMessage('Parameter points is required'),
       body('topic')
         .exists()
-        .withMessage('Parameter project is required'),
+        .withMessage('Parameter topic is required'),
       body('buildCall')
         .exists()
-        .withMessage('Parameter project is required'),
+        .withMessage('Parameter buildCall is required'),
       body('description')
         .exists()
-        .withMessage('Parameter project is required'),
+        .withMessage('Parameter description is required'),
+      body('challengeKeys')
+        .exists()
+        .withMessage('Parameter challengeKeys is required'),
     ],
     (req, res, next) => authorizeUser(req, res, next, jwtAdmin),
-    (req, res, next) => handleValidationResultError(req, res, next, 'createChallengeMessage'),
+    (req, res, next) => handleValidationResultError(req, res, next, 'createChallenge'),
     async (req, res, next) => {
-      const { project, title, points, topic, buildCall, description } = req.body
+      const { project, title, points, topic, buildCall, description, challengeKeys } = req.body
       try {
-        const challenge = await createChallenge(project, title, points, topic, buildCall, description)
+        const challenge = await createChallenge(project, title, points, topic, buildCall, description, challengeKeys)
 
         return res.json({ challenge })
       } catch (error) {
-        res.status(400).json({ message: error.message, type: 'createChallengeMessage' })
+        res.status(400).json({ message: error.message, type: 'createChallenge' })
       }
     }
   )
@@ -79,24 +82,20 @@ export function challengeService() {
         .withMessage('challengeId required'),
     ],
     (req, res, next) => authorizeUser(req, res, next, jwtAdmin),
-    (req, res, next) => handleValidationResultError(req, res, next, 'deleteChallengeMessage'),
+    (req, res, next) => handleValidationResultError(req, res, next, 'deleteChallenge'),
     async (req, res, next) => {
       const { challengeId } = req.params
 
       try {
-        const [
-          [{ affectedRows: affectedRowsChallenges }],
-          [{ affectedRows: affectedRowsUserChallenges }],
-        ] = await deleteChallengeById(challengeId)
+        const { affectedRows } = await deleteChallengeById(challengeId)
 
         res.json({
           affectedRows: {
-            challenges: affectedRowsChallenges,
-            userChallenges: affectedRowsUserChallenges,
+            challenges: affectedRows,
           },
         })
       } catch (error) {
-        res.status(400).json({ message: error.message, type: 'deleteChallengeMessage' })
+        res.status(400).json({ message: error.message, type: 'deleteChallenge' })
       }
     }
   )

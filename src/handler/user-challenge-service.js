@@ -9,17 +9,17 @@ export function userChallengeService() {
   const router = Router()
 
   router.get(
-    '/:challengeId/:userResult',
+    '/solve/:challengeId/:userResult',
     [
       header('Authorization')
         .exists()
         .withMessage('Authorization header is required'),
       param('challengeId')
         .isInt()
-        .withMessage('challengeId required'),
+        .withMessage('Parameter challengeId is required'),
       param('userResult')
         .isString()
-        .withMessage('userResult required'),
+        .withMessage('Parameter userResult is required'),
     ],
     (req, res, next) => authorizeUser(req, res, next, jwtUser),
     (req, res, next) => handleValidationResultError(req, res, next, 'solveUserChallenge'),

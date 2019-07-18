@@ -2,6 +2,7 @@ import { ExtractJwt, Strategy as JWTStrategy } from 'passport-jwt'
 import { createUser, getUserById, getUsersByEmail } from '../../util/database/user-queries'
 import { Strategy as LocalStrategy } from 'passport-local'
 import bcrypt from 'bcrypt'
+import { sendSignupEmail } from '../../util/mailer'
 import { sign } from 'jsonwebtoken'
 import { validateStudentEmail } from '../../util/validate-email'
 
@@ -24,15 +25,15 @@ export function getSignupStrategy() {
         if (users.length) {
           return done(null, false, { message: 'That email is already taken', type: 'signupMessage' })
         } else {
-          bcrypt.hash(password, 10, async (error, passwordHash) => {
-            if (error) {
-              throw error
-            }
+          const userId = await bcrypt.hash(password, 10).then(async passwordHash => {
+            await sendSignupEmail(email, password)
 
             const userId = await createUser(email, passwordHash, teamId, role)
 
-            return done(null, { hasCreated: true, id: userId }, { email, password })
+            return userId
           })
+
+          return done(null, { hasCreated: true, id: userId }, { email, password })
         }
       } catch (error) {
         return done(error)
@@ -57,7 +58,9 @@ export function getLoginStrategy() {
 
         const { password: passwordHash, createdAt, updatedAt, ...rest } = user
 
-        if (!bcrypt.compareSync(loginPassword, passwordHash)) {
+        const match = await bcrypt.compareSync(loginPassword, passwordHash)
+
+        if (!match) {
           return done(null, false, { message: 'Incorrect password.', type: 'loginMessage' })
         }
 

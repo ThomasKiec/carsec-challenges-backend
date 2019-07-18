@@ -3,6 +3,7 @@ import { createUser, getUserById, getUsersByEmail } from '../../util/database/us
 import { Strategy as LocalStrategy } from 'passport-local'
 import bcrypt from 'bcrypt'
 import { sign } from 'jsonwebtoken'
+import { validateStudentEmail } from '../../util/validate-email'
 
 export function getSignupStrategy() {
   return new LocalStrategy(
@@ -13,7 +14,11 @@ export function getSignupStrategy() {
     },
     async (req, email, password, done) => {
       try {
-        const { role } = req.body
+        if (!validateStudentEmail(email)) {
+          return done(null, false, { message: 'Email does not expect student pattern: "@st."', type: 'signupMessage' })
+        }
+
+        const { role, teamId } = req.body
         const [users] = await getUsersByEmail(email)
 
         if (users.length) {
@@ -24,9 +29,9 @@ export function getSignupStrategy() {
               throw error
             }
 
-            const { insertId } = await createUser(email, passwordHash, role)
+            const userId = await createUser(email, passwordHash, teamId, role)
 
-            return done(null, { hasCreated: true, id: insertId })
+            return done(null, { hasCreated: true, id: userId }, { email, password })
           })
         }
       } catch (error) {
@@ -50,7 +55,7 @@ export function getLoginStrategy() {
           return done(null, false, { message: 'No user found.', type: 'loginMessage' })
         }
 
-        const { password: passwordHash, ...rest } = user
+        const { password: passwordHash, createdAt, updatedAt, ...rest } = user
 
         if (!bcrypt.compareSync(loginPassword, passwordHash)) {
           return done(null, false, { message: 'Incorrect password.', type: 'loginMessage' })
@@ -60,7 +65,7 @@ export function getLoginStrategy() {
           expiresIn: '1d',
         })
 
-        return done(null, { token: `${token}` })
+        return done(null, { role: user.role, team: user.team, token })
       } catch (error) {
         return done(error)
       }
@@ -78,11 +83,13 @@ export function getJWTUserAuthenticationStrategy() {
       try {
         const { id } = request
 
-        const [[{ password, createdAt, updatedAt, ...user }]] = await getUserById(id)
+        const [[userById]] = await getUserById(id)
 
-        if (!user) {
+        if (!userById) {
           return done(null, false, { message: 'Invalid authorization header', type: 'authorize' })
         }
+
+        const { password, createdAt, updatedAt, ...user } = userById
 
         return done(null, user)
       } catch (error) {
@@ -102,11 +109,13 @@ export function getJWTAdminAuthenticationStrategy() {
       try {
         const { id } = request
 
-        const [[{ password, createdAt, updatedAt, ...user }]] = await getUserById(id)
+        const [[userById]] = await getUserById(id)
 
-        if (!user || user.role !== 'admin') {
+        if (!userById || userById.role !== 'admin') {
           return done(null, false, { message: 'Invalid authorization header', type: 'authorize' })
         }
+
+        const { password, createdAt, updatedAt, ...user } = userById
 
         return done(null, user)
       } catch (error) {

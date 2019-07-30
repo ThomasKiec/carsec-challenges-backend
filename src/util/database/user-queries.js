@@ -1,6 +1,8 @@
 import bcrypt from 'bcrypt'
+import { createUserChallenge } from './user-challenges-queries'
 import { createUserKey } from './user-keys-queries'
 import { getPool } from './connection'
+import { listChallenges } from './challenges-queries'
 import { listHardwareKeys } from './hardware-keys-queries'
 import passwordGenerator from 'generate-password'
 
@@ -55,6 +57,12 @@ export async function createUser(email, passwordHash, teamId, role) {
         await createUserKey(connection, id, userId)
       }
 
+      const [challenges] = await listChallenges()
+
+      for (const { id: challengeId } of challenges) {
+        await createUserChallenge(connection, userId, challengeId)
+      }
+
       await connection.commit()
 
       return userId
@@ -73,7 +81,7 @@ export async function changeUserPassword(userId, password) {
 
   return db.getConnection().then(async connection => {
     try {
-      bcrypt.hash(password, 10).then(async passwordHash => {
+      return bcrypt.hash(password, 10).then(async passwordHash => {
         const [user] = await db.query(
           `update users
           set password = ?

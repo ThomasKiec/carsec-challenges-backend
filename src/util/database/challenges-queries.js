@@ -9,7 +9,13 @@ async function getChallengeByTitle(title) {
   return db.query('select * from challenges where title  = ?', [title])
 }
 
-export async function listChallenges(userId) {
+export async function listChallenges() {
+  const db = await getPool()
+
+  return db.query('select * from challenges')
+}
+
+export async function listUserChallenges(userId) {
   const db = await getPool()
 
   return db.query(
@@ -41,8 +47,12 @@ export async function createChallenge(project, title, points, topic, buildCall, 
           await createUserChallenge(connection, userId, insertId)
         }
 
+        let counter = 1
+
         for (const keyId of challengeKeys) {
-          await createChallengeKey(connection, keyId, insertId)
+          await createChallengeKey(connection, keyId, insertId, counter)
+
+          counter++
         }
 
         await connection.commit()

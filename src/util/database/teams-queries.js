@@ -58,3 +58,17 @@ export async function deleteTeam(teamId) {
     }
   })
 }
+
+export async function listTeamsScores() {
+  const db = await getPool()
+
+  return db.query(`
+  select t.id, t.name, if(sum(scores.points) is null, 0, sum(scores.points)) points 
+  from teams t left join ( 
+    select u.id userId, u.teamId, uc.challengeId, c.points 
+    from users u left join user_challenges uc on u.id = uc.userId 
+    left join challenges c on uc.challengeId = c.id 
+    where uc.solved = 1) scores on t.id = scores.teamId 
+  group by t.id 
+  order by points desc`)
+}

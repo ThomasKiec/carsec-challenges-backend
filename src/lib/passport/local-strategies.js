@@ -56,7 +56,7 @@ export function getLoginStrategy() {
           return done(null, false, { message: 'No user found.', type: 'loginMessage' })
         }
 
-        const { password: passwordHash, createdAt, updatedAt, ...rest } = user
+        const { password: passwordHash, ...rest } = user
 
         const match = await bcrypt.compareSync(loginPassword, passwordHash)
 

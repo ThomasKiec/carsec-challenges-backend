@@ -1,13 +1,10 @@
 import { header, param } from 'express-validator/check'
-import { Router } from 'express'
-import { authorizeUser } from '../middlewares/authorize-user'
-import { handleValidationResultError } from '../middlewares/handle-validation-result-error'
-import { jwtUser } from '../lib/passport/initialize'
-import { solveUserChallenge } from '../util/database/user-challenges-queries'
+import { authorizeUser } from '../../middlewares/authorize-user'
+import { handleValidationResultError } from '../../middlewares/handle-validation-result-error'
+import { jwtUser } from '../../lib/passport/initialize'
+import { solveUserChallenge } from '../../util/database/user-challenges-queries'
 
-export function userChallengeService() {
-  const router = Router()
-
+export function solveUserChallengeRouter(router) {
   router.get(
     '/solve/:challengeId/:userResult',
     [

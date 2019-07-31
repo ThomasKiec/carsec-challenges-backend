@@ -31,22 +31,30 @@ const cronJobBuildUserChallenges = new CronJob(
 
 const app = express()
 
-app.server = http.createServer(app)
-app.server.listen(process.env.PORT, 'localhost')
-app.server.listen(process.env.PORT)
-
 app.use(cors())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(passport.initialize())
 
-app.use('/users', userService())
-app.use('/challenges', challengeService())
-app.use('/user-challenge', userChallengeService())
-app.use('/hardware-keys', hardwareKeysService())
-app.use('/teams', teamService())
+app.use('/api/users', userService())
+app.use('/api/challenges', challengeService())
+app.use('/api/user-challenge', userChallengeService())
+app.use('/api/hardware-keys', hardwareKeysService())
+app.use('/api/teams', teamService())
 
 initializePassportStrategies()
+
+// Handle production
+
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(`${__dirname}/../public/`))
+
+  app.get(/.*/, (req, res) => res.sendFile(`${__dirname}/../public/index.html`))
+}
+
+app.server = http.createServer(app)
+app.server.listen(process.env.PORT, 'localhost')
+app.server.listen(process.env.PORT)
 
 cronJobBuildUserChallenges.start()
 

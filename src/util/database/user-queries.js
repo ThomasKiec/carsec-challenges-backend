@@ -76,22 +76,40 @@ export async function createUser(email, passwordHash, teamId, role) {
   })
 }
 
-export async function changeUserPassword(userId, password) {
+export async function changeUserPassword(userId, password, passwordCheck, oldPassword) {
   const db = await getPool()
 
   return db.getConnection().then(async connection => {
     try {
-      return bcrypt.hash(password, 10).then(async passwordHash => {
-        const [user] = await db.query(
+      if (password !== passwordCheck) {
+        throw new Error('New passwords do not match')
+      }
+
+      const [[user]] = await getUserById(userId)
+
+      if (!user) {
+        throw new Error('Unknown user')
+      }
+
+      const { password: passwordHash } = user
+
+      const match = await bcrypt.compareSync(oldPassword, passwordHash)
+
+      if (!match) {
+        throw new Error('Old password incorrect')
+      }
+
+      return bcrypt.hash(password, 10).then(async updatedPasswordHash => {
+        const [updatedUser] = await db.query(
           `update users
           set password = ?
           where id = ?`,
-          [passwordHash, userId]
+          [updatedPasswordHash, userId]
         )
 
         await connection.commit()
 
-        return user
+        return updatedUser
       })
     } catch (error) {
       await connection.rollback()

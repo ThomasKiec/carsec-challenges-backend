@@ -5,7 +5,7 @@ import { changeUserPassword } from '../../util/database/user-queries'
 import { handleValidationResultError } from '../../middlewares/handle-validation-result-error'
 import { jwtUser } from '../../lib/passport/initialize'
 
-export function changeUserPasswordRouter(router) {
+function checkPasswordSchema(password) {
   const passwordSchema = new PasswordValidator()
 
   passwordSchema
@@ -21,6 +21,14 @@ export function changeUserPasswordRouter(router) {
     .not()
     .spaces()
 
+  const errors = passwordSchema.validate(password, { list: true })
+  if (errors.length) {
+    throw new Error(`Password is not strong enough: ${errors.toString()}`)
+  }
+  return true
+}
+
+export function changeUserPasswordRouter(router) {
   router.put(
     '/',
     [
@@ -28,24 +36,26 @@ export function changeUserPasswordRouter(router) {
         .exists()
         .withMessage('Authorization header is required'),
       body('password')
-        .custom(password => {
-          const errors = passwordSchema.validate(password, { list: true })
-          if (errors.length) {
-            throw new Error(`Password is not strong enough: ${errors.toString()}`)
-          }
-          return true
-        })
+        .custom(password => checkPasswordSchema(password))
         .exists()
         .withMessage('Parameter password is required'),
+      body('passwordCheck')
+        .custom(password => checkPasswordSchema(password))
+        .exists()
+        .withMessage('Parameter passwordCheck is required'),
+      body('oldPassword')
+        .exists()
+        .withMessage(),
     ],
     (req, res, next) => authorizeUser(req, res, next, jwtUser),
     (req, res, next) => handleValidationResultError(req, res, next, 'changePassword'),
     async (req, res, next) => {
       try {
-        const { password } = req.body
+        const { password, passwordCheck, oldPassword } = req.body
+
         const { id: userId } = res.user
 
-        const { affectedRows } = await changeUserPassword(userId, password)
+        const { affectedRows } = await changeUserPassword(userId, password, passwordCheck, oldPassword)
 
         res.json({
           affectedRows: {

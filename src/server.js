@@ -24,7 +24,7 @@ const cronJobBuildUserChallenges = new CronJob(
       return challenge
     }
   },
-  (completed, challenge, error) => {
+  (completed, error) => {
     buildCompleted = completed
   }
 )
@@ -45,12 +45,17 @@ app.use('/api/teams', teamService())
 initializePassportStrategies()
 
 // Handle production
-
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(`${__dirname}/../public/`))
 
   app.get(/.*/, (req, res) => res.sendFile(`${__dirname}/../public/index.html`))
 }
+
+// if (true) {
+//   app.use(express.static(`${__dirname}/../public/`))
+
+//   app.get(/.*/, (req, res) => res.sendFile(`${__dirname}/../public/index.html`))
+// }
 
 app.server = http.createServer(app)
 app.server.listen(process.env.PORT, 'localhost')

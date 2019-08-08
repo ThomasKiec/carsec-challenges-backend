@@ -32,7 +32,7 @@ export function userSignupRouter(router) {
       next()
     },
     (req, res, next) =>
-      passport.authenticate('local-signup', { session: false }, async (error, user, info) => {
+      passport.authenticate('local-signup', { session: false }, (error, user, info) => {
         if (error) {
           return res.status(400).json({ message: error.message, type: 'signupMessage' })
         }

@@ -1,10 +1,10 @@
 /* eslint-disable sort-keys */
 /* eslint-disable max-len */
 
-import nodemailer from 'nodemailer'
+import { createTransport } from 'nodemailer'
 
 export async function sendSignupEmail(email, password) {
-  const transporter = nodemailer.createTransport({
+  const transporter = createTransport({
     auth: {
       pass: process.env.EMAIL_PASSWORD,
       user: process.env.EMAIL_USER,
@@ -41,7 +41,7 @@ export async function sendSignupEmail(email, password) {
 }
 
 export async function sendPasswordResetEmail(email, password) {
-  const transporter = nodemailer.createTransport({
+  const transporter = createTransport({
     auth: {
       pass: process.env.EMAIL_PASSWORD,
       user: process.env.EMAIL_USER,
@@ -51,7 +51,7 @@ export async function sendPasswordResetEmail(email, password) {
 
   const info = await transporter.sendMail({
     from: process.env.EMAIL_USER,
-    subject: 'Signup Carsec Challenges password reset',
+    subject: 'Carsec Challenges password reset',
     to: email,
     html: `<html>
             <head>

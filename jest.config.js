@@ -1,8 +1,7 @@
 module.exports = {
   collectCoverage: false,
-  coverageReporters: ['json', 'lcov', 'text', 'text-summary'],
   collectCoverageFrom: ['src/**/*.js'],
-  moduleDirectories: ['node_modules'],
+  coverageReporters: ['json', 'lcov', 'text', 'text-summary'],
   coverageThreshold: {
     global: {
       branches: 100,
@@ -11,5 +10,6 @@ module.exports = {
       statements: 100,
     },
   },
+  moduleDirectories: ['node_modules'],
   testEnvironment: 'node',
 }

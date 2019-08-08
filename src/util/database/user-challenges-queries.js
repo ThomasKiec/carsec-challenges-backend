@@ -15,16 +15,17 @@ export async function createUserChallenge(connection, userId, challengeId) {
   )
 }
 
-export async function getPendingUserChallenges(limit) {
+export async function getPendingUserChallenges() {
   const db = await getPool()
 
   return db.query(
-    `select uc.userId, uc.challengeId, c.build_call 
+    `select uc.userId, uc.challengeId, ck.keyId, uk.keyValue, ck.keyOrder, c.build_call 
     from user_challenges uc 
     left join challenges c on c.id = uc.challengeId 
-    where uc.status = "pending"
-    LIMIT ?`,
-    [limit]
+    left join challenge_keys ck on uc.challengeId = ck.challengeId
+    left join user_keys uk on uc.userId = uk.userId and ck.keyId = uk.keyId
+    where uc.status = "pending and uk.keyValue != null "
+    order by uc.userId, uc.challengeId, ck.keyOrder`
   )
 }
 

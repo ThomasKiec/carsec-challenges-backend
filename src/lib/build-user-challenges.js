@@ -8,7 +8,7 @@ import { getPool } from '../util/database/connection'
 
 export async function buildUserChallenges(onComplete) {
   try {
-    const [pendingChallenges] = await getPendingUserChallenges(2)
+    const [pendingChallenges] = await getPendingUserChallenges(5)
 
     const dbPool = await getPool()
     const connection = await dbPool.getConnection()
@@ -34,6 +34,8 @@ export async function buildUserChallenges(onComplete) {
 
     return onComplete(true)
   } catch (error) {
-    return onComplete(true, null, error)
+    // set processingChallenges back to status pending
+
+    return onComplete(true, error)
   }
 }

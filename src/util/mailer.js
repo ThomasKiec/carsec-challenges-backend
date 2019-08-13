@@ -46,7 +46,7 @@ export async function sendPasswordResetEmail(email, password) {
       pass: process.env.EMAIL_PASSWORD,
       user: process.env.EMAIL_USER,
     },
-    service: 'gmail',
+    service: 'Gmail',
   })
 
   const info = await transporter.sendMail({

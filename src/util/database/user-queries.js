@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt'
-import { createUserChallenge } from './user-challenges-queries'
-import { createUserKey } from './user-keys-queries'
+import { createUserChallenges } from './user-challenges-queries'
+import { createUserKeys } from './user-keys-queries'
 import { getPool } from './connection'
 import { listChallenges } from './challenges-queries'
 import { listHardwareKeys } from './hardware-keys-queries'
@@ -46,6 +46,8 @@ export async function createUser(email, passwordHash, teamId, role) {
 
   return db.getConnection().then(async connection => {
     try {
+      await connection.beginTransaction()
+
       const [{ insertId: userId }] = await db.query(
         'insert into users (teamId, role, email, password) values( ?, ?, ?, ?)',
         [teamId, role, email, passwordHash]
@@ -53,14 +55,18 @@ export async function createUser(email, passwordHash, teamId, role) {
 
       const [hardwareKeys] = await listHardwareKeys()
 
-      for (const { id } of hardwareKeys) {
-        await createUserKey(connection, id, userId)
+      const userKeyValues = hardwareKeys.map(({ id: keyId }) => [keyId, userId])
+
+      if (userKeyValues.length) {
+        await createUserKeys(connection, userKeyValues)
       }
 
       const [challenges] = await listChallenges()
 
-      for (const { id: challengeId } of challenges) {
-        await createUserChallenge(connection, userId, challengeId)
+      const userChallengeValues = challenges.map(({ id: challengeId }) => [userId, challengeId])
+
+      if (userChallengeValues.length) {
+        await createUserChallenges(connection, userChallengeValues)
       }
 
       await connection.commit()
@@ -81,6 +87,8 @@ export async function changeUserPassword(userId, password, passwordCheck, oldPas
 
   return db.getConnection().then(async connection => {
     try {
+      await connection.beginTransaction()
+
       if (password !== passwordCheck) {
         throw new Error('New passwords do not match')
       }
@@ -126,6 +134,8 @@ export async function resetUserPassword(userId) {
 
   return db.getConnection().then(async connection => {
     try {
+      await connection.beginTransaction()
+
       const password = passwordGenerator.generate({ length: 10, numbers: true })
 
       return bcrypt.hash(password, 10).then(async passwordHash => {
@@ -155,6 +165,8 @@ export async function deleteUserById(userIds) {
 
   return db.getConnection().then(async connection => {
     try {
+      await connection.beginTransaction()
+
       let queryParameters = userIds
 
       if (Array.isArray(userIds)) {

@@ -1,5 +1,5 @@
-import { createChallengeKey } from './challenge-keys-queries'
-import { createUserChallenge } from './user-challenges-queries'
+import { createChallengeKeys } from './challenge-keys-queries'
+import { createUserChallenges } from './user-challenges-queries'
 import { getPool } from './connection'
 import { listUsers } from './user-queries'
 
@@ -32,6 +32,8 @@ export async function createChallenge(project, title, points, topic, buildCall, 
 
   return db.getConnection().then(async connection => {
     try {
+      await connection.beginTransaction()
+
       const [challengesByTitle] = await getChallengeByTitle(title)
 
       if (!challengesByTitle.length) {
@@ -43,16 +45,24 @@ export async function createChallenge(project, title, points, topic, buildCall, 
 
         const [users] = await listUsers()
 
-        for (const { id: userId } of users) {
-          await createUserChallenge(connection, userId, insertId)
+        const userChallengeValues = users.map(({ id: userId }) => [userId, insertId])
+
+        if (userChallengeValues.length) {
+          await createUserChallenges(connection, userChallengeValues)
         }
 
         let counter = 1
 
+        const challengeKeyValues = []
+
         for (const keyId of challengeKeys) {
-          await createChallengeKey(connection, keyId, insertId, counter)
+          challengeKeyValues.push([keyId, insertId, counter])
 
           counter++
+        }
+
+        if (challengeKeyValues.length) {
+          await createChallengeKeys(connection, challengeKeyValues)
         }
 
         await connection.commit()
@@ -76,6 +86,8 @@ export async function deleteChallengeById(challengeId) {
 
   return db.getConnection().then(async connection => {
     try {
+      await connection.beginTransaction()
+
       const [deletedChallenge] = await connection.query('delete from challenges where id = ?', [challengeId])
 
       await connection.commit()

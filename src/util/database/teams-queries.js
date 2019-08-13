@@ -10,6 +10,8 @@ export async function createTeam(name) {
 
   return db.getConnection().then(async connection => {
     try {
+      await connection.beginTransaction()
+
       const [teamByName] = await getTeamByName(db, name)
 
       if (!teamByName.length) {
@@ -44,6 +46,8 @@ export async function deleteTeam(teamId) {
 
   return db.getConnection().then(async connection => {
     try {
+      await connection.beginTransaction()
+
       const deletedTeam = await connection.query('delete from teams where id = ?', [teamId])
 
       await connection.commit()

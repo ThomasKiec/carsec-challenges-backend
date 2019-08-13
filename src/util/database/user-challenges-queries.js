@@ -7,11 +7,11 @@ async function getUserChallenge(userId, challengeId) {
 }
 
 // eslint-disable-next-line require-await
-export async function createUserChallenge(connection, userId, challengeId) {
+export async function createUserChallenges(connection, userChallengeValues) {
   return connection.query(
     `insert into user_challenges (userId, challengeId) 
-      values(?, ?)`,
-    [userId, challengeId]
+      values ?`,
+    [userChallengeValues]
   )
 }
 
@@ -57,6 +57,8 @@ export async function solveUserChallenge(userId, challengeId, userResult) {
   if (userResult === challengeResult) {
     return db.getConnection().then(async connection => {
       try {
+        await connection.beginTransaction()
+
         const userChallenge = await connection.query(
           'update user_challenges set solved = true where userId = ? and challengeId = ?',
           [userId, challengeId]

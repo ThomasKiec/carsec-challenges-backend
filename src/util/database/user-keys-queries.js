@@ -1,8 +1,8 @@
 import { getPool } from './connection'
 
 // eslint-disable-next-line require-await
-export async function createUserKey(connection, keyId, userId) {
-  return connection.query('insert into user_keys(keyId, userId) values(?, ?)', [keyId, userId])
+export async function createUserKeys(connection, userKeyValues) {
+  return connection.query('insert into user_keys (keyId, userId) values ?', [userKeyValues])
 }
 
 export async function updateUserKey(userKeys, userId) {
@@ -10,6 +10,8 @@ export async function updateUserKey(userKeys, userId) {
 
   return db.getConnection().then(async connection => {
     try {
+      await connection.beginTransaction()
+
       const updatedUserKeys = await Promise.all(
         userKeys.map(({ keyValue, keyId }) =>
           connection.query('update user_keys set keyValue = ? where keyId = ? and userId = ?', [
@@ -51,6 +53,8 @@ export async function deleteUserKeyValues(userId) {
 
   return db.getConnection().then(async connection => {
     try {
+      await connection.beginTransaction()
+
       const [deletedUserKeyValues] = await connection.query(
         `
         update user_keys set keyValue = null where userId = ?`,

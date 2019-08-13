@@ -1,4 +1,4 @@
-import { createUserKey } from './user-keys-queries'
+import { createUserKeys } from './user-keys-queries'
 import { getPool } from './connection'
 import { listUsers } from './user-queries'
 
@@ -12,6 +12,8 @@ export async function createHardwareKey(name) {
 
   return db.getConnection().then(async connection => {
     try {
+      await connection.beginTransaction()
+
       const [hardwareKeyByName] = await getHardwareKeyByName(db, name)
 
       if (!hardwareKeyByName.length) {
@@ -19,8 +21,10 @@ export async function createHardwareKey(name) {
 
         const [users] = await listUsers()
 
-        for (const { id: userId } of users) {
-          await createUserKey(connection, insertId, userId)
+        const userKeyValues = users.map(({ id: userId }) => [insertId, userId])
+
+        if (userKeyValues.length) {
+          await createUserKeys(connection, userKeyValues)
         }
 
         await connection.commit()
@@ -44,6 +48,8 @@ export async function deleteHardwareKey(id) {
 
   return db.getConnection().then(async connection => {
     try {
+      await connection.beginTransaction()
+
       const deletedHardwareKey = await connection.query('delete from hardware_keys where id = ?', [id])
 
       await connection.commit()

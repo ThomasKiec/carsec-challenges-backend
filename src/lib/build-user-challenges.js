@@ -13,6 +13,8 @@ export async function buildUserChallenges(onComplete) {
     const dbPool = await getPool()
     const connection = await dbPool.getConnection()
 
+    await connection.beginTransaction()
+
     try {
       for (const challenge of pendingChallenges) {
         const { userId, challengeId, build_call: buildCall } = challenge

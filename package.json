@@ -19,6 +19,7 @@
     "express": "^4.16.4",
     "express-validator": "^5.3.1",
     "generate-password": "^1.4.2",
+    "helmet": "^3.20.0",
     "jsonwebtoken": "^8.5.1",
     "mysql2": "^1.6.5",
     "nodemailer": "^6.3.0",
@@ -31,9 +32,9 @@
   },
   "devDependencies": {
     "@babel/core": "^7.5.5",
-    "@babel/polyfill": "^7.4.4",
     "@babel/preset-env": "^7.5.5",
     "@babel/register": "^7.5.5",
+    "@types/jest": "^24.0.17",
     "babel-eslint": "^10.0.2",
     "babel-jest": "^24.8.0",
     "eslint": "^5.16.0",

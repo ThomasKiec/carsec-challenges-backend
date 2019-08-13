@@ -5,6 +5,7 @@ import { challengeService } from './handler/challenge-service'
 import cors from 'cors'
 import express from 'express'
 import { hardwareKeysService } from './handler/hardware-keys-service'
+import helmet from 'helmet'
 import http from 'http'
 import { initializePassportStrategies } from './lib/passport/initialize'
 import passport from 'passport'
@@ -32,6 +33,7 @@ const cronJobBuildUserChallenges = new CronJob(
 const app = express()
 
 app.use(cors())
+app.use(helmet())
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(passport.initialize())
@@ -50,12 +52,6 @@ if (process.env.NODE_ENV === 'production') {
 
   app.get(/.*/, (req, res) => res.sendFile(`${__dirname}/../public/index.html`))
 }
-
-// if (true) {
-//   app.use(express.static(`${__dirname}/../public/`))
-
-//   app.get(/.*/, (req, res) => res.sendFile(`${__dirname}/../public/index.html`))
-// }
 
 app.server = http.createServer(app)
 app.server.listen(process.env.PORT, 'localhost')

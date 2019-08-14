@@ -21,6 +21,7 @@ export async function createTeam(name) {
 
         return team
       }
+      throw new Error(`Team with name: "${name}" already exists`)
     } catch (error) {
       await connection.rollback()
 

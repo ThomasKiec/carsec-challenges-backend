@@ -1,10 +1,10 @@
-import bcrypt from 'bcrypt'
+import { compareSync, hash } from 'bcrypt'
 import { createUserChallenges } from './user-challenges-queries'
 import { createUserKeys } from './user-keys-queries'
+import { generate } from 'generate-password'
 import { getPool } from './connection'
 import { listChallenges } from './challenges-queries'
 import { listHardwareKeys } from './hardware-keys-queries'
-import passwordGenerator from 'generate-password'
 
 export async function listUsersWithTeams() {
   const db = await getPool()
@@ -101,24 +101,30 @@ export async function changeUserPassword(userId, password, passwordCheck, oldPas
 
       const { password: passwordHash } = user
 
-      const match = await bcrypt.compareSync(oldPassword, passwordHash)
+      const match = await compareSync(oldPassword, passwordHash)
 
       if (!match) {
         throw new Error('Old password incorrect')
       }
 
-      return bcrypt.hash(password, 10).then(async updatedPasswordHash => {
-        const [updatedUser] = await db.query(
-          `update users
+      return hash(password, 10)
+        .then(async updatedPasswordHash => {
+          const [updatedUser] = await db.query(
+            `update users
           set password = ?
           where id = ?`,
-          [updatedPasswordHash, userId]
-        )
+            [updatedPasswordHash, userId]
+          )
 
-        await connection.commit()
+          await connection.commit()
 
-        return updatedUser
-      })
+          return updatedUser
+        })
+        .catch(async error => {
+          await connection.rollback()
+
+          throw error
+        })
     } catch (error) {
       await connection.rollback()
 
@@ -136,20 +142,26 @@ export async function resetUserPassword(userId) {
     try {
       await connection.beginTransaction()
 
-      const password = passwordGenerator.generate({ length: 10, numbers: true })
+      const password = generate({ length: 10, numbers: true })
 
-      return bcrypt.hash(password, 10).then(async passwordHash => {
-        const [user] = await db.query(
-          `update users
+      return hash(password, 10)
+        .then(async passwordHash => {
+          const [user] = await db.query(
+            `update users
           set password = ?
           where id = ?`,
-          [passwordHash, userId]
-        )
+            [passwordHash, userId]
+          )
 
-        await connection.commit()
+          await connection.commit()
 
-        return { password, user }
-      })
+          return { password, user }
+        })
+        .catch(async error => {
+          await connection.rollback()
+
+          throw error
+        })
     } catch (error) {
       await connection.rollback()
 

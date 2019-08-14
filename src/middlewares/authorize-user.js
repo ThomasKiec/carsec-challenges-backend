@@ -1,8 +1,8 @@
+import { authenticate } from 'passport'
 import { jwtUser } from '../lib/passport/initialize'
-import passport from 'passport'
 
 export function authorizeUser(req, res, next, strategy) {
-  return passport.authenticate(strategy, { session: false }, (error, user, info) => {
+  return authenticate(strategy, { session: false }, (error, user, info) => {
     if (error) {
       return next(error)
     }

@@ -20,5 +20,5 @@ export function handleValidationResultError(req, res, next, type) {
     })
   }
 
-  next()
+  return next()
 }

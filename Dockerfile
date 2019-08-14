@@ -1,10 +1,6 @@
 FROM node:11
 
-WORKDIR /user/src/app/frontend
-
-
-
-WORKDIR /user/src/app
+WORKDIR /user/src/app/carsec-challenges-backend
 
 COPY package*.json ./
 

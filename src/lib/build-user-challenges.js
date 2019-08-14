@@ -8,7 +8,23 @@ import { getPool } from '../util/database/connection'
 
 export async function buildUserChallenges(onComplete) {
   try {
-    const [pendingChallenges] = await getPendingUserChallenges(5)
+    const [pendingChallenges] = await getPendingUserChallenges()
+
+    const pendingChallengesByUser = pendingChallenges.reduce(
+      (userChallenges, { userId, challengeId, keyId, keyValue, keyOrder, buildCall }) => ({
+        ...userChallenges,
+        [userId]: {
+          [challengeId]: {
+            buildCall,
+            [keyOrder]: {
+              keyId,
+              keyValue,
+            },
+          },
+        },
+      }),
+      {}
+    )
 
     const dbPool = await getPool()
     const connection = await dbPool.getConnection()
@@ -16,15 +32,14 @@ export async function buildUserChallenges(onComplete) {
     await connection.beginTransaction()
 
     try {
-      for (const challenge of pendingChallenges) {
-        const { userId, challengeId, build_call: buildCall } = challenge
-        // Filehandler will get a challenge file and stores it with scalable-blob-store
+      for (const [userId, challenges] of Object.entries(pendingChallengesByUser)) {
+        for (const [challengeId, challengeData] of Object.entries(challenges)) {
+          await processUserChallengeBuild(connection, userId, challengeId)
 
-        await processUserChallengeBuild(connection, userId, challengeId)
+          const { filePath, challengeResult } = await buildUserChallenge(userId, challengeId, challengeData)
 
-        const { challengeResult, filePath } = await buildUserChallenge(buildCall)
-
-        await completeUserChallengeBuild(connection, userId, challengeId, filePath, challengeResult)
+          await completeUserChallengeBuild(connection, userId, challengeId, filePath, challengeResult)
+        }
       }
     } catch (error) {
       await connection.rollback()
@@ -33,11 +48,8 @@ export async function buildUserChallenges(onComplete) {
     } finally {
       await connection.release()
     }
-
     return onComplete(true)
   } catch (error) {
-    // set processingChallenges back to status pending
-
     return onComplete(true, error)
   }
 }

@@ -15,7 +15,7 @@ services:
         build: ./carsec-challenges-backend/database
         environment:
             MYSQL_DATABASE: hacking_challenges
-            MYSQL_ROOT_PASSWORD: admin
+            MYSQL_ROOT_PASSWORD: <MYSQL Root Password>
             MYSQL_USER: carsec-challenges-backend
             MYSQL_PASSWORD: carsec-challenges-backend
             DATABASE_HOST: db
@@ -29,10 +29,10 @@ services:
             DB_PASSWORD: carsec-challenges-backend
             DB_DATABASE: hacking_challenges
             DB_PORT: 3306
-            EMAIL_USER: carsec.challenges@gmail.com
-            EMAIL_PASSWORD: v5fxeJB3IHg5PbkVh5c7
+            EMAIL_USER: <Service E-Mail Adress>
+            EMAIL_PASSWORD: <Service E-Mail password>
             PORT: 4000
-            JWT_SECRET: vBXAKb3nHuVpqZRt8xUCtK1NKcpeMlVcygoXYKQL
+            JWT_SECRET: <JWT_Secret>
             NODE_ENV: production
         container_name: docker-carsec-challenges
         restart: on-failure
